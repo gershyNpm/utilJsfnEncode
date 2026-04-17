@@ -1,3 +1,78 @@
 import '@gershy/clearing';
 
-export default null;
+export type JsImport = { varDef: null | string, importPath: string }; // Javascript-style import, so `varDef` can include simple variable assignment or destructuring; any content between `const ` and ` = ctx.jsfnImport(...)`!
+export type SovereignFn = (...args: any) => any;
+export type JsfnInst<Cls extends abstract new (...args: Jsfn[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
+export type JsfnInstSer<Cls extends abstract new (...args: Jsfn[]) => any> = {
+  hoist: `${string /* import url */}::${string /* exported class name */}`,
+  form: Cls,
+  args: ConstructorParameters<Cls>
+};
+export type Jsfn =
+  | null
+  | boolean
+  | number
+  | string
+  | SovereignFn
+  | JsfnInst<any>
+  | Jsfn[]
+  | { [K: string]: Jsfn };
+
+export type JsfnEncodeArgs<V extends Jsfn> = { val: V, baseUrl: string };
+export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
+  
+  // const importReg = niceRegex(String[cl.baseline](`
+  //   | ^[ ]*                                                                              (?:         )?
+  //   |      const[ ]       [=][ ]*                     [.]jsfnImport[(]['#]        ['#][)]   [ ]+as[ ]  
+  //   |              ([^=]+)       [a-zA-Z][a-zA-Z0-9.]*                    ([^'#]+)                     
+  // `).replaceAll('#', '`'));
+  
+  // Captures lines like:
+  // const util = ctx.jsfnImport('<repo>/src/boot/util');
+  // const util = ctx.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
+  // const { util1, util2 } = ctx.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
+  // const { util1, util2 } = c.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
+  
+  const jsImports: JsImport[] = []; // Note "js imports" are a "reference to code, including a url, relative filepath, or name of an npm module"
+  const serializeObjKey = (key: string) => /^[$_a-zA-Z][$_a-zA-Z]+$/.test(key) ? key : `'${key.replaceAll(`'`, `\\'`)}'`;
+  const serialize = (val: Jsfn): string => {
+    
+    if (cl.isCls(val, Array))    return '[' + val.map      ((v   ) =>                          serialize(v))  .join(',') + ']';
+    if (cl.isCls(val, Object))   return '{' + val[cl.toArr]((v, k) => `${serializeObjKey(k)}:${serialize(v)}`).join(',') + '}';
+    
+    if (cl.inCls(val, Function)) {
+      
+      const importReg = /\b(?:const|let|var)[ ]*([^=]+)[=][ ]*[a-zA-Z][a-zA-Z0-9.]*[.]jsfnImport[(]["'`]([^"'`]+)["'`][)][;]?/g;
+      
+      return val.toString().replace(importReg, (full: string, varDef: string, importPath: string) => {
+        jsImports.push({ varDef, importPath });
+        return `/*jsfn:hoisted:${full}*/`;
+      });
+      
+    }
+    
+    if (cl.inCls((val as any)?.toJsfn, Function)) {
+      const { args, form, hoist } = val as any as JsfnInstSer<any>;
+      const [ importPath, clsName ] = hoist.split('::');
+      jsImports.push({ varDef: clsName, importPath });
+      return `new ${clsName}(${args.map(a => serialize(a as Jsfn)).join(',')})`;
+    }
+    
+    return JSON.stringify(val);
+    
+  };
+  
+  return {
+    
+    // Note `code` is stringified, but it isn't json - it's js, in string representation
+    code: serialize(args.val), // `jsImports` isn't populated until this is called!
+    
+    // Imports beginning with "." are treated as relative paths
+    jsImports: jsImports.map(ji => ji.importPath[0] !== '.' ? ji : {
+      ...ji,
+      importPath: new URL(ji.importPath, args.baseUrl).href
+    })
+    
+  };
+
+};
