@@ -1,6 +1,6 @@
 {
   "name": "@gershy/util-jsfn-encode",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TODO",
   "keywords": [
     "TODO"
@@ -16,7 +16,7 @@
   "homepage": "https://github.com/gershyNpm/utilJsfnEncode#readme",
   "license": "ISC",
   "peerDependencies": {
-    "@gershy/clearing": "^0.0.36"
+    "@gershy/clearing": "^0.0.41"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -32,7 +32,7 @@
   "types": "./cmp/mjs/main.d.ts",
   "exports": {
     ".": {
-      "import": "./cmp/mjs/main.js",
+      "import": "./cmp/esm/main.js",
       "require": "./cmp/cjs/main.js"
     }
   },

@@ -9,12 +9,25 @@ import jsfnEncode from './main.ts';
   type Tests = {
     1: Enforce<{ x: 'y' }, { x: 'y' }>,
   };
+  if (0) ((v?: Tests) => void 0)();
   
 })();
 
 testRunner([
   
-  { name: 'basic test', fn: async () => {
+  { name: 'basic', fn: async () => {
+    
+    assertEqual(
+      jsfnEncode({ baseUrl: import.meta.url, val: { type: 'rec', props: {} } }),
+      {
+        code: '{type:"rec",props:{}}',
+        jsImports: []
+      }
+    );
+    
+  }},
+  
+  { name: 'function with import resolution', fn: async () => {
     
     // TODO: this test assumes we always run with tsx-minified code... fair assumption??
     assertEqual(

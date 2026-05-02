@@ -52,7 +52,7 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
     }
     
     if (cl.inCls((val as any)?.toJsfn, Function)) {
-      const { args, form, hoist } = val as any as JsfnInstSer<any>;
+      const { args, hoist } = val as any as JsfnInstSer<any>;
       const [ importPath, clsName ] = hoist.split('::');
       jsImports.push({ varDef: clsName, importPath });
       return `new ${clsName}(${args.map(a => serialize(a as Jsfn)).join(',')})`;
