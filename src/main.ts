@@ -52,7 +52,7 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
     }
     
     if (cl.inCls((val as any)?.toJsfn, Function)) {
-      const { args, hoist } = val as any as JsfnInstSer<any>;
+      const { args, hoist } = (val as any).toJsfn() as JsfnInstSer<any>;
       const [ importPath, varDef ] = hoist.split('::');
       
       // If `varDef` looks like `'{ Cls }'` then the `varDef` resolves to `'{ Cls }'`, while the
