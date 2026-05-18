@@ -1,6 +1,6 @@
 import '@gershy/clearing';
 
-export type JsImport = { varDef: null | string, importPath: string }; // Javascript-style import, so `varDef` can include simple variable assignment or destructuring; any content between `const ` and ` = ctx.jsfnImport(...)`!
+export type JsImport = { importPath: string, varDef: null | string }; // Javascript-style import, so `varDef` can include simple variable assignment or destructuring; any content between `const ` and ` = ctx.jsfnImport(...)`!
 export type SovereignFn = (...args: any) => any;
 export type JsfnInst<Cls extends abstract new (...args: Jsfn[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
 export type JsfnInstSer<Cls extends abstract new (...args: Jsfn[]) => any> = {
@@ -53,9 +53,12 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
     
     if (cl.inCls((val as any)?.toJsfn, Function)) {
       const { args, hoist } = val as any as JsfnInstSer<any>;
-      const [ importPath, clsName ] = hoist.split('::');
-      jsImports.push({ varDef: clsName, importPath });
-      return `new ${clsName}(${args.map(a => serialize(a as Jsfn)).join(',')})`;
+      const [ importPath, varDef ] = hoist.split('::');
+      
+      // If `varDef` looks like `'{ Cls }'` then the `varDef` resolves to `'{ Cls }'`, while the
+      // constructor string representation removes the {}, looking like `'new Cls(...)'`
+      jsImports.push({ importPath, varDef });
+      return `new ${varDef.replace(/[{}]/g, '').trim()}(${args.map(a => serialize(a as Jsfn)).join(',')})`;
     }
     
     return JSON.stringify(val);
