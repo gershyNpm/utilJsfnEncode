@@ -2,18 +2,23 @@ import '@gershy/clearing';
 
 export type JsImport = { importPath: string, varDef: null | string }; // Javascript-style import, so `varDef` can include simple variable assignment or destructuring; any content between `const ` and ` = ctx.jsfnImport(...)`!
 export type SovereignFn = (...args: any) => any;
-export type JsfnInst<Cls extends abstract new (...args: Jsfn[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
-export type JsfnInstSer<Cls extends abstract new (...args: Jsfn[]) => any> = {
+export type SovereignCls = abstract new (...args: any) => any;
+
+// TODO: Would be great if these types could validate that the constructor params are fully Jsfn...
+export type JsfnInst<Cls extends abstract new (...args: any[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
+export type JsfnInstSer<Cls extends abstract new (...args: any[]) => any> = {
   hoist: `${string /* import url */}::${string /* exported class name */}`,
   form: Cls,
   args: ConstructorParameters<Cls>
 };
+
 export type Jsfn =
   | null
   | boolean
   | number
   | string
   | SovereignFn
+  | SovereignCls
   | JsfnInst<any>
   | Jsfn[]
   | { [K: string]: Jsfn };
