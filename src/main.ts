@@ -4,7 +4,8 @@ export type JsImport = { importPath: string, varDef: null | string }; // Javascr
 export type SovereignFn = (...args: any) => any;
 export type SovereignCls = abstract new (...args: any) => any;
 
-// TODO: Would be great if these types could validate that the constructor params are fully Jsfn...
+// TODO: Would love if these types could force the constructor params to a subset of Jsfn, but
+// getting that working + behaving well is trickyyyy
 export type JsfnInst<Cls extends abstract new (...args: any[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
 export type JsfnInstSer<Cls extends abstract new (...args: any[]) => any> = {
   hoist: `${string /* import url */}::${string /* exported class name */}`,
