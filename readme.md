@@ -33,12 +33,23 @@ Note that `jsfnEncode`'d values must be decodable in any @gershy context! For th
 
 ## Sovereign functions
 
-A sovereign function (or class) has no dependencies other than its own parameters, and the javascript global resolution context. The "javascript global resolution context" is the intersection of all widely supported globals across all common, modern environments - it includes, e.g., `TextDecoder`, and excludes, e.g., `process` (which is unique to nodejs). Sovereign functions also must not reference meta-properties such as `import.meta`.
+A sovereign function (or class) has no dependencies other than its own parameters, and the javascript global resolution context.
 
-A non-sovereign function:
+The "javascript global resolution context" is the sum of:
+1. the subset of all javascript globals that are widely supported in all common, modern environments - including, e.g., `TextDecoder`, and excluding, e.g., `process` (which is unique to nodejs)
+2. the `clearing` / `cl` globals from @gershy/clearing, what are considered defacto globals that pre-exist anywhere jsfn is used
+
+Sovereign functions also must not reference meta-properties such as `import.meta`.
+
+Some non-sovereign functions:
 ```ts
 const val = 'hello';
-const notSovereign = () => console.log(val); // References local, outside-of-scope variable `val`
+
+// References local, outside-of-scope variable `val`
+const notSovereign1 = () => console.log(val);
+
+// References nodejs-specific `Buffer`
+const notSovereign2 = (base64: string) => Buffer.from(v, 'base64').toString('utf8');
 ```
 
 A sovereign function:
@@ -82,14 +93,12 @@ When `jsfnEncode` encodes, it will delete any such occurrences from the function
 
 const sovereign = (inp: { jsfnImport: (val: string) => any, parts: string[] }) => {
   
-  // References nothing other than its parameters, and `cl` from @gershy/clearing - note that
-  // specifically @gershy/clearing is considered, within the context of jsfn, to be a dependable
-  // member of the "global resolution context"!
+  // References nothing other than its parameters, and `cl` from @gershy/clearing
   
   const { default: ph } = inp.jsfnImport('@gershy/phrasing') as typeof import('@gershy/phrasing');
   
   return String[cl.baseline](`
-    | You gave me some parts, that is, an array of strings.
+    | You gave me some parts, as in, an array of strings.
     | Now I shall formulate a camel case value from them.
     | Here it is: "${ ph('parts->camel', inp.parts) }"
   `);
@@ -106,7 +115,7 @@ console.log(code);
 //  | inp => {
 //  |   
 //  |   return String[cl.baseline](`
-//  |     | You gave me some parts, that is, an array of strings.
+//  |     | You gave me some parts, as in, an array of strings.
 //  |     | Now I shall formulate a camel case value from them.
 //  |     | Here it is: "${ ph('parts->camel', inp.parts) }"
 //  |   `);
@@ -119,12 +128,12 @@ console.log(jsImports);
 //  | [
 //  |   {
 //  |     importPath: '@gershy/phrasing',
-//  |     varDef: '{default:ph}'
+//  |     varDef: '{default:ph}'            // Note this is a *string*!!
 //  |   }
 //  | ]
 ```
 
-Note that for `yyy.jsfnImport('zzz')`, `zzz` may be an npm module name, any url resolving to ts/js, or a relative filepath. If it's a relative filepath, it will be resolved against the `baseUrl` input property passed to `jsfnEncode`.
+Note that for `yyy.jsfnImport('zzz')`, `zzz` may be an npm module name, any global url resolving to ts/js, or a relative filepath. If it's a relative filepath it's resolved against the `baseUrl` input property passed to `jsfnEncode`. Note a simple pattern can almost always be used: pass `import.meta.url` to `baseUrl`, and use the same relative filepath you would in a normal top-level `import`.
 
 More effort is shifted to the decoding step when `code` contains `jsfnImport`s. For example, to decode arbitrary jsfn with imports a very coarse approach (there are subtle bugs here!) to produce runnable cjs could look like:
 ```ts
@@ -132,16 +141,18 @@ import { type JsImport } from '@gershy/util-jsfn-encode'; // type JsImport = { i
 
 const decodeReferentialJsfn = (jsfn: { code: string, jsImports: JsImport[] }) => eval([
   
+  `require('@gershy/clearing')`, // In case clearing globals aren't already installed
+  
   // Add in `eval`-able `require` calls for every js import
   ...jsImports.map(jsImport => {
     
     return jsImport.varDef
-      ? `const ${ jsImport.varDef } = require(${ jsImport.importPath })`
-      :                              `require(${ jsImport.importPath })`
+      ? `const ${ jsImport.varDef } = require('${ jsImport.importPath }')`
+      :                              `require('${ jsImport.importPath }')`
     
   }),
   
-  // Now every dangling reference anywhere in `code` is met by the previous js import var defs
+  // Now dangling references throughout `code` are satisfied by the import `const` definitions
   code
   
 ].join(';'));

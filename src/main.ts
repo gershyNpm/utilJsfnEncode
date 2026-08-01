@@ -27,18 +27,6 @@ export type Jsfn =
 export type JsfnEncodeArgs<V extends Jsfn> = { val: V, baseUrl: string };
 export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
   
-  // const importReg = niceRegex(String[cl.baseline](`
-  //   | ^[ ]*                                                                              (?:         )?
-  //   |      const[ ]       [=][ ]*                     [.]jsfnImport[(]['#]        ['#][)]   [ ]+as[ ]  
-  //   |              ([^=]+)       [a-zA-Z][a-zA-Z0-9.]*                    ([^'#]+)                     
-  // `).replaceAll('#', '`'));
-  
-  // Captures lines like:
-  // const util = ctx.jsfnImport('<repo>/src/boot/util');
-  // const util = ctx.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
-  // const { util1, util2 } = ctx.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
-  // const { util1, util2 } = c.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
-  
   const jsImports: JsImport[] = []; // Note "js imports" are a "reference to code, including a url, relative filepath, or name of an npm module"
   const serializeObjKey = (key: string) => /^[$_a-zA-Z][$_a-zA-Z0-9]+$/.test(key) ? key : `'${key.replaceAll(`'`, `\\'`)}'`;
   const serialize = (val: Jsfn): string => {
@@ -48,7 +36,25 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
     
     if (cl.inCls(val, Function)) {
       
-      const importReg = /\b(?:const|let|var)[ ]*([^=]+)[=][ ]*[a-zA-Z][a-zA-Z0-9.]*[.]jsfnImport[(]["'`]([^"'`]+)["'`][)][;]?/g;
+      // TODO: could possibly use smarter handling when the literal path/url contains quote chars;
+      // pretty edge-casey though
+      
+      // Captures lines like:
+      // const util = ctx.jsfnImport('./util');
+      // const util = ctx.jsfnImport('./util');
+      // const { util1, util2 } = ctx.jsfnImport('./path/to/util');
+      // const [ util1, { util2, util3: myFaveUtil } ] = c.jsfnImport('../../../util');
+      const importReg = /\b(?:const|let|var)\b[ ]*([^=]+)[=][ ]*(?:[a-zA-Z_$][a-zA-Z0-9.]*)[.]jsfnImport[(]["'`]([^"'`]+)["'`][)][;]?/g;
+      // var init        \b(?:const|let|var)                                                                                         
+      // spacing                            \b[ ]*                                                                                   
+      // var/destructure                          ([^=]+)                                                                            
+      // assignment                                      [=][ ]*                                                                     
+      // identifier                                             (?:                      *)                                          
+      // (non capture)                                             [a-zA-Z_$][a-zA-Z0-9.]                                            
+      // import call                                                                       [.]jsfnImport[(]                   [)]    
+      // quoted                                                                                            ["'`]         ["'`]       
+      // path/url                                                                                               ([^"'`]+)            
+      // optional semicolon                                                                                                      [;]?
       
       return val.toString().replace(importReg, (full: string, varDef: string, importPath: string) => {
         jsImports.push({ varDef, importPath });
