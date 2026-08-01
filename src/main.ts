@@ -4,8 +4,8 @@ export type JsImport = { importPath: string, varDef: null | string }; // Javascr
 export type SovereignFn = (...args: any) => any;
 export type SovereignCls = abstract new (...args: any) => any;
 
-// TODO: Would love if these types could force the constructor params to a subset of Jsfn, but
-// getting that working + behaving well is trickyyyy
+// TODO: Would love if these types could force the constructor params to a subset of Jsfn, but I'm
+// struggling to implement that in a well-behaved way
 export type JsfnInst<Cls extends abstract new (...args: any[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
 export type JsfnInstSer<Cls extends abstract new (...args: any[]) => any> = {
   hoist: `${string /* import url */}::${string /* exported class name */}`,
@@ -40,10 +40,10 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
   // const { util1, util2 } = c.jsfnImport('<repo>/src/boot/util') as typeof import('../src/boot/util');
   
   const jsImports: JsImport[] = []; // Note "js imports" are a "reference to code, including a url, relative filepath, or name of an npm module"
-  const serializeObjKey = (key: string) => /^[$_a-zA-Z][$_a-zA-Z]+$/.test(key) ? key : `'${key.replaceAll(`'`, `\\'`)}'`;
+  const serializeObjKey = (key: string) => /^[$_a-zA-Z][$_a-zA-Z0-9]+$/.test(key) ? key : `'${key.replaceAll(`'`, `\\'`)}'`;
   const serialize = (val: Jsfn): string => {
     
-    if (cl.isCls(val, Array))    return '[' + val.map      ((v   ) =>                          serialize(v))  .join(',') + ']';
+    if (cl.isCls(val, Array))    return '[' + val.map      ((v   ) =>                          serialize(v)  ).join(',') + ']';
     if (cl.isCls(val, Object))   return '{' + val[cl.toArr]((v, k) => `${serializeObjKey(k)}:${serialize(v)}`).join(',') + '}';
     
     if (cl.inCls(val, Function)) {

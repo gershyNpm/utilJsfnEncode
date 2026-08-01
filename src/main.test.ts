@@ -41,11 +41,11 @@ testRunner([
         code: String[cl.baseline](`
           | {
           |   arr: [ 1, 2, 3 ],
-          |   'fn1': () => console.log("hi!"),
-          |   'fn2': ctx => { /* jsfn:hoisted:const { v } = ctx.jsfnImport("./haha.ts"); */ return~v.help() },
-          |   'fn3': ctx => { /* jsfn:hoisted:const [ x ] = ctx.jsfnImport("@gershy/made-up-helper"); */ return~x.help() }
+          |   fn1: () => console.log("hi!"),
+          |   fn2: ctx => { /* jsfn:hoisted:const { v } = ctx.jsfnImport("./haha.ts"); */ return#v.help() },
+          |   fn3: ctx => { /* jsfn:hoisted:const [ x ] = ctx.jsfnImport("@gershy/made-up-helper"); */ return#x.help() }
           | }
-        `).replace(/\s/g, '').replace(/~/g, ' '),
+        `).replace(/\s+/g, '').replace(/#/g, ' '),
         jsImports: [
           { importPath: new URL('./haha.ts', import.meta.url).href, varDef: '{v}' },
           { importPath: '@gershy/made-up-helper', varDef: '[x]' }
