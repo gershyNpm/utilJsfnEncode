@@ -36,8 +36,7 @@ export default <V extends Jsfn>(args: JsfnEncodeArgs<V>) => {
     
     if (cl.inCls(val, Function)) {
       
-      // TODO: could possibly use smarter handling when the literal path/url contains quote chars;
-      // pretty edge-casey though
+      // Consider: smarter handling for literal path/url containing quote chars? Kinda insane tho
       
       // Captures lines like:
       // const util = ctx.jsfnImport('./util');
