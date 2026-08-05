@@ -6,8 +6,8 @@ export type SovereignCls = abstract new (...args: any) => any;
 
 // TODO: Would love if these types could force the constructor params to a subset of Jsfn, but I'm
 // struggling to implement that in a well-behaved way
-export type JsfnInst<Cls extends abstract new (...args: any[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
-export type JsfnInstSer<Cls extends abstract new (...args: any[]) => any> = {
+export type JsfnInst<Cls extends abstract new (...inp: any[]) => any> = { toJsfn: () => JsfnInstSer<Cls> };
+export type JsfnInstSer<Cls extends abstract new (...inp: any[]) => any> = {
   hoist: `${string /* import url */}::${string /* exported class name */}`,
   form: Cls,
   args: ConstructorParameters<Cls>

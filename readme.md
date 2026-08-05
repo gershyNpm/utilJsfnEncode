@@ -158,3 +158,8 @@ const decodeReferentialJsfn = (jsfn: { code: string, jsImports: JsImport[] }) =>
 ].join(';'));
 ```
 
+Also...
+
+## Any object can be jsfn-encoded!
+
+Attach a `toJsfn` method. TODO: Should probably make this a symbol...
